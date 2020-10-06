@@ -9,7 +9,7 @@
 #define SOCKET_CREATE 2
 #define BIND_ERROR 3
 #define LISTEN_ERR 4
-#define Noraml_Error -1
+#define Normal_Error -1
 
 // log error level
 #define Normal 1

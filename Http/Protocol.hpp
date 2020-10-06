@@ -19,7 +19,7 @@ class HttpRequest{
     std::string method;
     std::string url;
     std::string version;
-    std::unordered_map<std::string,std::string> hander_kv;
+    std::unordered_map<std::string,std::string> header_kv;
 
     std::string path; //这次请求想访问服务器上哪个资源
     std::string query_string;  //这次请求给服务器哪个资源传递参数
@@ -32,6 +32,7 @@ class HttpRequest{
     }
     void Show()
     {
+      cout<<"#####################################"<<endl;
       cout<<"Debug:"<<request_line<<endl; 
       cout<<"Debug:"<<request_header<<endl;
       cout<<"Debug:"<<blank<<endl;
@@ -40,7 +41,8 @@ class HttpRequest{
       cout<<"Debug url"<<url<<endl;
       cout<<"Debug version"<<version<<endl;  
       cout<<"Debug path"<<path<<endl; 
-      cout<<"Debug query_string"<<query_string<<endl;
+      cout<<"Debug query_string"<<query_string<<endl; 
+      cout<<"#####################################"<<endl;
     }
 
     void SetRequestHeader(std::string &header)
@@ -48,7 +50,7 @@ class HttpRequest{
       request_header = header;
     }
     //GET /index.html HTTP /1.0 \n
-    void RequestLinePause()
+    void RequestLineParse()
     {  
       std::stringstream ss(request_line);    
       ss >> method >> url >> version;
@@ -76,6 +78,43 @@ class HttpRequest{
       query_string = url.substr(pos+1);
      }
    }
+    int GetContantLength()
+    {
+      auto it = header_kv.find("Content-Length");
+      if(it == header_kv.end())
+      {
+        LOG(Warning,"Post method,but not request body");
+        return Normal_Error;
+      }
+        return Util::StringToInt(it->second);
+    }
+    
+    bool IsMethodOK()
+    {    
+      if(strcasecmp(method.c_str(),"GET") == 0 || strcasecmp(method.c_str(),"POST") == 0)
+      {
+        return true; 
+      }
+      return false;
+    }
+    bool IsGet()
+    {
+      return strcasecmp(method.c_str(),"GET") == 0;
+    }
+    //读取http请求正文,放进rq->RequestBody
+
+    void RequestHeaderPause()
+    {
+      size_t pos = request_header.find('\n');
+      int start = 0;
+      while (pos != std::string::npos) //找到\n的位置
+      {
+        std::string sub = request_header.substr(start, pos - start);
+        Util::MakeKV(header_kv,sub);
+        start = pos + 1;
+        pos = request_header.find('\n',pos+1);
+      }
+    }
     ~HttpRequest()
     {
 
@@ -89,7 +128,6 @@ class HttpResponse
   std::string response_header;  //报头
   std::string blank;// 空行
   std::string response_text; // 响应正文
-
 
 };
 
@@ -121,7 +159,7 @@ class Connect  // 收 HttpRequest 发 HttpResponse 异常情况进行相应
             }
           }
           else{
-            line.push_bank(c);
+            line.push_back(c);
           }
         }
         else{
@@ -130,6 +168,7 @@ class Connect  // 收 HttpRequest 发 HttpResponse 异常情况进行相应
         }
       }
     }
+
     void RecvHttpRequestLine(std::string &request_line)
     {
       RecveLine(request_line); 
@@ -160,73 +199,36 @@ class Connect  // 收 HttpRequest 发 HttpResponse 异常情况进行相应
       rq->SetRequestLine(request_line);
       rq->SetRequestHeader(request_header);
     }
+    
+    void RecvHttpBody(HttpRequest *rq)
+    {
+      int content_Length = rq->GetContantLength();
+      if(content_Length > 0)
+      {
+        std::string body;
+        char c;
+        while(content_Length > 0)
+        {
+          recv(sock,&c,1,0);
+          body.push_back(c);
+          content_Length--;
+        }
+        rq->SetRequestBody(body);
+      }
+      rq->SetUrlToPath();
+    }
     ~Connect()
     {
 
     }
 };
+
 class Entry
 { 
   public:
-    bool IsMethodOK()
-    {    
-      if(strcasecmp(method.c_str(),"GET") == 0 || strcasecmp(method.c_str(),"POST") == 0)
-      {
-        return true; 
-      }
-      return false;
-    }
-    bool ISGet()
-    {
-      return strcasecmp(method.c_str(),"GET") == 0
-    }
-    int GetContantLength()
-    {
-      auto it = header_kv.find("Content-Length");
-      if(it == header_kv.end())
-      {
-        LOG(Warning,"Post method,but not request body");
-        return NORMAL_ERR;
-      }
-        return StringToInt(it->second);
-    }
-    //读取http请求正文,放进rq->RequestBody
-    void RecvHttpBody(HttpRequest *rq)
-    {
-      int content_length = rq->GetContantLength();
-      if(content_Length > 0)
-      {
-        std::string body;
-        while(content_length > 0)
-        {
-          recv(sock,&c,1,0);
-          body.push_back(c);
-          content_length--;
-        }
-        rq->SetRequestBody(body);
-      }
-      rq->StUrlToPath();
-    }    
-
-    void RequestHeaderPause()
-    {
-      size_t pos = request_header.find('\n');
-      int start = 0;
-      while (pos != std::string::npos) //找到\n的位置
-      {
-        std::string sub = request_header.substr(start, pos - start);
-        MakeKV(header_kv,sub);
-        start = pos + 1;
-        pos = request_header.find('\n',pos+1);
-
-      }
-
-    }
-
-    static void *HanderRequest(void *args)
+    static void *HandlerRequest(void *args)
     {
       int* p  = (int*)args;
-
       //recv request 
       //parse request  解析请求
       //make response  制作响应
@@ -238,31 +240,27 @@ class Entry
       HttpResponse * rsp = new HttpResponse();
 
       conn->RecvHttpRequest(rq);
-      rq->RequestLinePause();
-      if(!rq->IsMethodOk())
+      rq->RequestLineParse();
+      if(!rq->IsMethodOK())
       {
-        Log(Warning,"request Method is not Ok!");
+        LOG(Warning,"request Method is not Ok!");
       }
       rq->RequestHeaderPause();
-      if(rq->IsGet())
+      if(!rq->IsGet())
       {
             //request 请求全部读完    
             //1:分析请求资源是否合法
           conn->RecvHttpBody(rq);
       }
-    if(rq->ISGet())
+    if(rq->IsGet())
     {
       rq->UrlParse();
     }
-      
     rq->Show();
     //2:分析请求路径中是否携带参数
-      
-
       delete conn;
       delete rq;
       delete rsp; 
     }
-
 };
 
