@@ -3,13 +3,13 @@
 #include<iostream>
 #include<unordered_map>
 #include<string>
-
+#include<sstream>
 using namespace std;
 
 class Util
 {
   public:
-    static void MakeKV(std::unordered_map<std::string,std::string> &header_kv,std::string sub)
+    static void MakeKV(std::unordered_map<std::string,std::string> &header_kv,std::string str)
     {
       size_t pos = str.find(": ");
       if (str.npos == pos)
@@ -25,5 +25,14 @@ class Util
       //mp.insert(make_pair<string, string>(key, value));
         header_kv.insert({key,value});
     }
+  static int StringToInt(std::string &str)
+  {
+    int len = 0;
+    std::stringstream ss(str);
+    ss>>len;
+    return len; 
+  }
+
+
 
 };
