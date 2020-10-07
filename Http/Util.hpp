@@ -32,7 +32,11 @@ class Util
     ss>>len;
     return len; 
   }
-
-
-
+static std::string IntToString(int num)
+{
+  std::stringstream ss;
+  ss>>num;
+  std::string str = ss.str();
+  return str;
+}
 };

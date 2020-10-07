@@ -30,13 +30,18 @@ class HttpRequest{
 
     std::string path; //这次请求想访问服务器上哪个资源
     std::string query_string;  //这次请求给服务器哪个资源传递参数
-    
+  private:
+    int file_size; //文件大小
     bool cgi;
   public:
     HttpRequest():blank("\n"),path(WWWROOT),cgi(false){}
     void SetRequestLine(std::string &line)
     {
       request_line = line;
+    }
+    bool IsCGI()
+    {
+      return cgi;
     }
     void Show()
     {
@@ -77,20 +82,25 @@ class HttpRequest{
     {
       cgi = true;
     }
-   void UrlParse()
-   {
+    void UrlParse()
+    {
       //url->path  query_string 可能不存在
-     std::size_t pos = url.find('?');
-     if(std::string::npos == pos)
-     {
+      std::size_t pos = url.find('?');
+      if(std::string::npos == pos)
+      {
         path += url; // 不带任何参数的url
-     }
-     else{
-      path += url.substr(0,pos);
-      query_string = url.substr(pos+1);//带参数 
-      cgi = true;
-     }
-   }
+      }
+      else{
+        path += url.substr(0,pos);
+        query_string = url.substr(pos+1);//带参数 
+        cgi = true;
+      }
+    }
+ 
+    int GetFileSize()
+  { 
+    return file_size();
+  }
     int GetContantLength()
     {
       auto it = header_kv.find("Content-Length");
@@ -99,9 +109,9 @@ class HttpRequest{
         LOG(Warning,"Post method,but not request body");
         return Normal_Error;
       }
-        return Util::StringToInt(it->second);
+      return Util::StringToInt(it->second);
     }
-    
+
     bool IsMethodOK()
     {    
       if(strcasecmp(method.c_str(),"GET") == 0 || strcasecmp(method.c_str(),"POST") == 0)
@@ -132,35 +142,36 @@ class HttpRequest{
         pos = request_header.find('\n',pos+1);
       }
     }
-  bool PathIsLegal()
-  {
-    bool ret = true; 
-    struct stat st;
-    if(stat(path.c_str(),&st) == 0)  //资源存在
+    bool PathIsLegal()
     {
+      bool ret = true; 
+      struct stat st;
+      if(stat(path.c_str(),&st) == 0)  //资源存在
+      {
         //exsit
         //dir ?
         //doc ?
-    if(S_ISDIR(st.st_mode)) //请求是一个目录
-    {
-      if(path[path.length()-1] != '/')
-      {
-        path += "/";
-      }
-      path+=WELCOME_PAGE; //默认是一个 ./wwwroot/
-    } 
-//请求的是一个可执行的程序  POST ,GET(带参的)  为了做什么 CGI
-    else if((st.st_mode & S_IXUSR) || (st.st_mode & S_IXGRP) || (st.st_mode & S_IXOTH)){
+        if(S_ISDIR(st.st_mode)) //请求是一个目录
+        {
+          if(path[path.length()-1] != '/')
+          {
+            path += "/";
+          }
+          path+=WELCOME_PAGE; //默认是一个 ./wwwroot/
+        } 
+        //请求的是一个可执行的程序  POST ,GET(带参的)  为了做什么 CGI
+        else if((st.st_mode & S_IXUSR) || (st.st_mode & S_IXGRP) || (st.st_mode & S_IXOTH)){
           //判定你请求的资源是否具有可执行权限
-     cgi = true;
+          cgi = true;
+        }
+      }
+      else{
+        //404错误
+        ret = false; 
+      }
+      file_size = st.st_size();
+      return ret;
     }
-    }
-    else{
-      //404错误
-      ret = false; 
-    }
-   return ret;
-  }
 
 
 
@@ -174,10 +185,34 @@ class HttpRequest{
 class HttpResponse
 {
 
-  std::string status_line; //行
+  std::string response_line; //行
   std::string response_header;  //报头
   std::string blank;// 空行
   std::string response_text; // 响应正文
+  public:
+  HttpResponse():blank("\n")
+  {
+
+  }
+    void AddResponseHeader(std::string & line)
+    {
+      if(response_header.empty())
+      {
+        response_header = line;
+      }
+      else{
+        response_header += line;
+      }
+    }
+  void SetResponseLine(std::string line)
+  {
+    response_line = line;
+  }
+~HttpResponse()
+{
+
+}
+
 
 };
 
@@ -249,7 +284,7 @@ class Connect  // 收 HttpRequest 发 HttpResponse 异常情况进行相应
       rq->SetRequestLine(request_line);
       rq->SetRequestHeader(request_header);
     }
-    
+
     void RecvHttpBody(HttpRequest *rq)
     {
       int content_Length = rq->GetContantLength();
@@ -277,6 +312,32 @@ class Connect  // 收 HttpRequest 发 HttpResponse 异常情况进行相应
 class Entry
 { 
   public:
+  static void MakeResponse(HttpRequest *rq,HttpResponse *rsp)
+  {
+    if(rq->IsCGI())
+    {
+         
+    }
+    else{
+    std::string line = "HTTP/1.0 OK";
+    rsp->SetResponseLine(line);
+    line = "Content -Type:text/html\n";
+    rsp->AddResponseHeader(line);
+    line = "Content-Length:\n";
+    line += Util::IntToString(rq->GetFileSize());
+    line+= "\r\n";
+    line+="\r\n"; // blank     
+    rsp->AddResponseHeader(line);
+    }
+  }
+
+
+  static int ProcessNormal(Connect *conn,HttpRequest *rq,HttpResponse *rsp)
+  {
+    MakeResponse(rq,rsp);
+
+  }
+
     static void *HandlerRequest(void *args)
     {
       int* p  = (int*)args;
@@ -299,34 +360,40 @@ class Entry
       rq->RequestHeaderParse();
       if(rq->IsPost())
       {
-            //request 请求全部读完    
-          conn->RecvHttpBody(rq);
+        //request 请求全部读完    
+        conn->RecvHttpBody(rq);
       }
-    if(rq->IsGet())
-    {
-      rq->UrlParse();
-    }
-  
-        //1:分析请求资源是否合法 即分析资源是否在根目录里面存在
-//带参数 
-//cgi = true;
-    if(!rq->PathIsLegal())
-    {
-         LOG(Warning,"Path is not legal!");
-    }
+      if(rq->IsGet())
+      {
+        rq->UrlParse();
+      }
 
-//request 读完 url 解析完毕 cgi setdown
-//no cgi 说明 没有参数 也不是POST http request ->path 
-//cgi : 带参 ，server 要处理参数 （待定）
+      //1:分析请求资源是否合法 即分析资源是否在根目录里面存在
+      //带参数 
+      //cgi = true;
+      if(!rq->PathIsLegal())
+      {
+        LOG(Warning,"Path is not legal!");
+      }
 
-    if(rq->IsCGI())
-    {
+      //request 读完 url 解析完毕 cgi setdown
+      //no cgi 说明 没有参数 也不是POST http request ->path 
+      //cgi : 带参 ，server 要处理参数 （待定）
 
-    }
+      if(rq->IsCGI())
+      {
+        ProcessCGI();
+        LOG(Normal,"exec by non cgi");
+      }
+      else  //no cgi 
+      {
+          ProcessNormal(conn,rq,rsp);
+
+      }
 
 
-   // rq->Show();
-    //2:分析请求路径中是否携带参数
+      // rq->Show();
+      //2:分析请求路径中是否携带参数
       delete conn;
       delete rq;
       delete rsp; 
