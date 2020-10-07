@@ -9,6 +9,13 @@
 #include"Util.hpp"
 #include<sys/types.h>
 #include<sys/socket.h>
+#include<sys/types.h>
+#include<unistd.h>
+#include<sys/stat.h>
+
+#define WWWROOT "./wwwroot"
+#define WELCOME_PAGE "./wwwroot.html"
+
 class HttpRequest{
   private:
     std::string request_line; //行
@@ -23,9 +30,10 @@ class HttpRequest{
 
     std::string path; //这次请求想访问服务器上哪个资源
     std::string query_string;  //这次请求给服务器哪个资源传递参数
-
+    
+    bool cgi;
   public:
-    HttpRequest():blank("\n"){}
+    HttpRequest():blank("\n"),path(WWWROOT),cgi(false){}
     void SetRequestLine(std::string &line)
     {
       request_line = line;
@@ -65,17 +73,22 @@ class HttpRequest{
       // if path == POST 资源就在Url中保存
       path = url;
     }
+    void SetCGI()
+    {
+      cgi = true;
+    }
    void UrlParse()
    {
       //url->path  query_string 可能不存在
      std::size_t pos = url.find('?');
      if(std::string::npos == pos)
      {
-        path = url; // 不带任何参数的url
+        path += url; // 不带任何参数的url
      }
      else{
-      path = url.substr(0,pos);
-      query_string = url.substr(pos+1);
+      path += url.substr(0,pos);
+      query_string = url.substr(pos+1);//带参数 
+      cgi = true;
      }
    }
     int GetContantLength()
@@ -103,7 +116,11 @@ class HttpRequest{
     }
     //读取http请求正文,放进rq->RequestBody
 
-    void RequestHeaderPause()
+    bool IsPost()
+    {
+      return strcasecmp(method.c_str(),"Post") == 0;
+    }
+    void RequestHeaderParse()
     {
       size_t pos = request_header.find('\n');
       int start = 0;
@@ -115,6 +132,39 @@ class HttpRequest{
         pos = request_header.find('\n',pos+1);
       }
     }
+  bool PathIsLegal()
+  {
+    bool ret = true; 
+    struct stat st;
+    if(stat(path.c_str(),&st) == 0)  //资源存在
+    {
+        //exsit
+        //dir ?
+        //doc ?
+    if(S_ISDIR(st.st_mode)) //请求是一个目录
+    {
+      if(path[path.length()-1] != '/')
+      {
+        path += "/";
+      }
+      path+=WELCOME_PAGE; //默认是一个 ./wwwroot/
+    } 
+//请求的是一个可执行的程序  POST ,GET(带参的)  为了做什么 CGI
+    else if((st.st_mode & S_IXUSR) || (st.st_mode & S_IXGRP) || (st.st_mode & S_IXOTH)){
+          //判定你请求的资源是否具有可执行权限
+     cgi = true;
+    }
+    }
+    else{
+      //404错误
+      ret = false; 
+    }
+   return ret;
+  }
+
+
+
+
     ~HttpRequest()
     {
 
@@ -216,6 +266,7 @@ class Connect  // 收 HttpRequest 发 HttpResponse 异常情况进行相应
         rq->SetRequestBody(body);
       }
       rq->SetUrlToPath();
+      rq->SetCGI();
     }
     ~Connect()
     {
@@ -245,18 +296,36 @@ class Entry
       {
         LOG(Warning,"request Method is not Ok!");
       }
-      rq->RequestHeaderPause();
-      if(!rq->IsGet())
+      rq->RequestHeaderParse();
+      if(rq->IsPost())
       {
             //request 请求全部读完    
-            //1:分析请求资源是否合法
           conn->RecvHttpBody(rq);
       }
     if(rq->IsGet())
     {
       rq->UrlParse();
     }
-    rq->Show();
+  
+        //1:分析请求资源是否合法 即分析资源是否在根目录里面存在
+//带参数 
+//cgi = true;
+    if(!rq->PathIsLegal())
+    {
+         LOG(Warning,"Path is not legal!");
+    }
+
+//request 读完 url 解析完毕 cgi setdown
+//no cgi 说明 没有参数 也不是POST http request ->path 
+//cgi : 带参 ，server 要处理参数 （待定）
+
+    if(rq->IsCGI())
+    {
+
+    }
+
+
+   // rq->Show();
     //2:分析请求路径中是否携带参数
       delete conn;
       delete rq;

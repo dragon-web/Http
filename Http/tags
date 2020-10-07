@@ -1,0 +1,84 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.8	//
+ARG_ERR	Log.hpp	8;"	d
+Accept	Sock.hpp	/^    static int Accept(int sock)$/;"	f	class:Sock
+BIND_ERROR	Log.hpp	10;"	d
+Bind	Sock.hpp	/^    static void Bind(int sock,int port)$/;"	f	class:Sock
+Connect	Protocol.hpp	/^    Connect(int _sock) : sock(_sock)$/;"	f	class:Connect
+Connect	Protocol.hpp	/^class Connect  \/\/ 收 HttpRequest 发 HttpResponse 异常情况进行相应$/;"	c
+DefaultPort	HttpServer.hpp	8;"	d
+Entry	Protocol.hpp	/^class Entry$/;"	c
+Error	Log.hpp	17;"	d
+Fatal	Log.hpp	18;"	d
+GetContantLength	Protocol.hpp	/^    int GetContantLength()$/;"	f	class:HttpRequest
+GetTimeStamp	Log.hpp	/^uint64_t GetTimeStamp()$/;"	f
+HandlerRequest	Protocol.hpp	/^    static void *HandlerRequest(void *args)$/;"	f	class:Entry
+HttpRequest	Protocol.hpp	/^    HttpRequest():blank("\\n"),path(WWWROOT),cgi(false){}$/;"	f	class:HttpRequest
+HttpRequest	Protocol.hpp	/^class HttpRequest{$/;"	c
+HttpResponse	Protocol.hpp	/^class HttpResponse$/;"	c
+HttpServer	HttpServer.hpp	/^  HttpServer(int _port = DefaultPort) : port(_port),listen_sock(-1)$/;"	f	class:HttpServer
+HttpServer	HttpServer.hpp	/^class HttpServer$/;"	c
+InitServer	HttpServer.hpp	/^  void InitServer()$/;"	f	class:HttpServer
+IsGet	Protocol.hpp	/^    bool IsGet()$/;"	f	class:HttpRequest
+IsMethodOK	Protocol.hpp	/^    bool IsMethodOK()$/;"	f	class:HttpRequest
+IsPost	Protocol.hpp	/^    bool IsPost()$/;"	f	class:HttpRequest
+LISTEN_ERR	Log.hpp	11;"	d
+LOG	Log.hpp	55;"	d
+Listen	Sock.hpp	/^    static void Listen(int sock)$/;"	f	class:Sock
+Log	Log.hpp	/^void Log(int level,std::string msg,std::string model,int number)$/;"	f
+MakeKV	Util.hpp	/^    static void MakeKV(std::unordered_map<std::string,std::string> &header_kv,std::string str)$/;"	f	class:Util
+NUM	Log.hpp	22;"	d
+Normal	Log.hpp	15;"	d
+Normal_Error	Log.hpp	12;"	d
+PathIsLegal	Protocol.hpp	/^  bool PathIsLegal()$/;"	f	class:HttpRequest
+RecvHttpBody	Protocol.hpp	/^    void RecvHttpBody(HttpRequest *rq)$/;"	f	class:Connect
+RecvHttpRequest	Protocol.hpp	/^    void RecvHttpRequest(HttpRequest *rq)$/;"	f	class:Connect
+RecvHttpRequestHeader	Protocol.hpp	/^    void RecvHttpRequestHeader(std::string request_header)$/;"	f	class:Connect
+RecvHttpRequestLine	Protocol.hpp	/^    void RecvHttpRequestLine(std::string &request_line)$/;"	f	class:Connect
+RecveLine	Protocol.hpp	/^    int RecveLine(std::string &line)$/;"	f	class:Connect
+RequestHeaderParse	Protocol.hpp	/^    void RequestHeaderParse()$/;"	f	class:HttpRequest
+RequestLineParse	Protocol.hpp	/^    void RequestLineParse()$/;"	f	class:HttpRequest
+SOCKET_CREATE	Log.hpp	9;"	d
+SetCGI	Protocol.hpp	/^    void SetCGI()$/;"	f	class:HttpRequest
+SetRequestBody	Protocol.hpp	/^    void SetRequestBody(std::string &body)$/;"	f	class:HttpRequest
+SetRequestHeader	Protocol.hpp	/^    void SetRequestHeader(std::string &header)$/;"	f	class:HttpRequest
+SetRequestLine	Protocol.hpp	/^    void SetRequestLine(std::string &line)$/;"	f	class:HttpRequest
+SetUrlToPath	Protocol.hpp	/^    void SetUrlToPath()$/;"	f	class:HttpRequest
+Show	Protocol.hpp	/^    void Show()$/;"	f	class:HttpRequest
+Sock	Sock.hpp	/^class Sock$/;"	c
+Socket	Sock.hpp	/^    static int Socket()$/;"	f	class:Sock
+Start	HttpServer.hpp	/^  void Start()$/;"	f	class:HttpServer
+StringToInt	Util.hpp	/^  static int StringToInt(std::string &str)$/;"	f	class:Util
+UrlParse	Protocol.hpp	/^   void UrlParse()$/;"	f	class:HttpRequest
+Usage	main.cc	/^static void Usage(std::string proc)$/;"	f	file:
+Util	Util.hpp	/^class Util$/;"	c
+WELCOME_PAGE	Protocol.hpp	17;"	d
+WWWROOT	Protocol.hpp	16;"	d
+Warning	Log.hpp	16;"	d
+blank	Protocol.hpp	/^    std::string blank;\/\/ 空行$/;"	m	class:HttpRequest
+blank	Protocol.hpp	/^  std::string blank;\/\/ 空行$/;"	m	class:HttpResponse
+cgi	Protocol.hpp	/^    bool cgi;$/;"	m	class:HttpRequest
+header_kv	Protocol.hpp	/^    std::unordered_map<std::string,std::string> header_kv;$/;"	m	class:HttpRequest
+listen_sock	HttpServer.hpp	/^  int listen_sock;$/;"	m	class:HttpServer
+log_level	Log.hpp	/^static std::string log_level[] = $/;"	v
+main	main.cc	/^int main(int argc ,char* argv[])$/;"	f
+method	Protocol.hpp	/^    std::string method;$/;"	m	class:HttpRequest
+path	Protocol.hpp	/^    std::string path; \/\/这次请求想访问服务器上哪个资源$/;"	m	class:HttpRequest
+port	HttpServer.hpp	/^  int port;$/;"	m	class:HttpServer
+query_string	Protocol.hpp	/^    std::string query_string;  \/\/这次请求给服务器哪个资源传递参数$/;"	m	class:HttpRequest
+request_body	Protocol.hpp	/^    std::string request_body; \/\/ 请求正文$/;"	m	class:HttpRequest
+request_header	Protocol.hpp	/^    std::string request_header;  \/\/报头$/;"	m	class:HttpRequest
+request_line	Protocol.hpp	/^    std::string request_line; \/\/行$/;"	m	class:HttpRequest
+response_header	Protocol.hpp	/^  std::string response_header;  \/\/报头$/;"	m	class:HttpResponse
+response_text	Protocol.hpp	/^  std::string response_text; \/\/ 响应正文$/;"	m	class:HttpResponse
+sock	Protocol.hpp	/^    int sock;$/;"	m	class:Connect
+status_line	Protocol.hpp	/^  std::string status_line; \/\/行$/;"	m	class:HttpResponse
+url	Protocol.hpp	/^    std::string url;$/;"	m	class:HttpRequest
+version	Protocol.hpp	/^    std::string version;$/;"	m	class:HttpRequest
+~Connect	Protocol.hpp	/^    ~Connect()$/;"	f	class:Connect
+~HttpRequest	Protocol.hpp	/^    ~HttpRequest()$/;"	f	class:HttpRequest
+~HttpServer	HttpServer.hpp	/^  ~HttpServer()$/;"	f	class:HttpServer
